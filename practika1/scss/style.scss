@@ -1,13 +1,10 @@
-// Переменные
 $primary-color: #2ecc71;
 $border-radius: 8px;
 
-// Миксин для тени
 @mixin box-shadow($color) {
     box-shadow: 0 4px 12px rgba($color, 0.2);
 }
 
-// Центрирование body
 body {
     display: flex;
     justify-content: center;
