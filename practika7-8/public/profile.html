@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профиль</title>
+    <style>
+        body { font-family: Arial; max-width: 400px; margin: 50px auto; padding: 20px; }
+        .token-box { 
+            background: #f4f4f4; 
+            padding: 10px; 
+            border-radius: 5px; 
+            word-break: break-all;
+            margin: 10px 0;
+        }
+        button { 
+            width: 100%; 
+            padding: 10px; 
+            background: #dc3545; 
+            color: white; 
+            border: none; 
+            cursor: pointer;
+            margin: 5px 0;
+        }
+        .copy-btn {
+            background: #28a745;
+        }
+        a { display: block; text-align: center; margin-top: 20px; }
+        hr { margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h2>Профиль</h2>
+    <div id="userInfo"></div>
+    
+    <button class="copy-btn" onclick="copyToken()" id="copyBtn" style="display:none;">Копировать токен</button>
+    <button onclick="logout()">Выйти</button>
+    <a href="/">На главную</a>
+
+    <script>
+        let currentToken = '';
+
+        async function loadProfile() {
+            const token = localStorage.getItem('token');
+            currentToken = token;
+            
+            if (!token) {
+                alert('Нет токена');
+                window.location.href = '/login.html';
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/auth/me', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (res.ok) {
+                    const user = await res.json();
+                    document.getElementById('userInfo').innerHTML = `
+                        <p><strong>ID:</strong> ${user.id}</p>
+                        <p><strong>Email:</strong> ${user.email}</p>
+                        <p><strong>Имя:</strong> ${user.first_name}</p>
+                        <p><strong>Фамилия:</strong> ${user.last_name}</p>
+                        <p><strong>Токен:</strong></p>
+                        <div class="token-box">${token}</div>
+                    `;
+                    document.getElementById('copyBtn').style.display = 'block';
+                } else {
+                    localStorage.removeItem('token');
+                    alert('Ошибка авторизации');
+                    window.location.href = '/login.html';
+                }
+            } catch (err) {
+                alert('Ошибка соединения');
+                window.location.href = '/login.html';
+            }
+        }
+
+        function copyToken() {
+            navigator.clipboard.writeText(currentToken).then(() => {
+                alert('Токен скопирован!');
+            }).catch(() => {
+                alert('Не удалось скопировать');
+            });
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/login.html';
+        }
+
+        loadProfile();
+    </script>
+</body>
+</html>

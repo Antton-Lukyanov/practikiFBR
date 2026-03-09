@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация</title>
+    <style>
+        body { font-family: Arial; max-width: 400px; margin: 50px auto; padding: 20px; }
+        input { width: 100%; padding: 8px; margin: 10px 0; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; cursor: pointer; }
+        .error { color: red; margin: 10px 0; }
+        a { display: block; text-align: center; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h2>Регистрация</h2>
+    <form id="registerForm">
+        <input type="email" id="email" placeholder="Email" required>
+        <input type="text" id="first_name" placeholder="Имя" required>
+        <input type="text" id="last_name" placeholder="Фамилия" required>
+        <input type="password" id="password" placeholder="Пароль" required>
+        <button type="submit">Зарегистрироваться</button>
+        <div id="error" class="error"></div>
+    </form>
+    <a href="/login.html">Уже есть аккаунт? Войти</a>
+    <a href="/">На главную</a>
+
+    <script>
+        document.getElementById('registerForm').onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const data = {
+                email: document.getElementById('email').value,
+                first_name: document.getElementById('first_name').value,
+                last_name: document.getElementById('last_name').value,
+                password: document.getElementById('password').value
+            };
+
+            try {
+                const res = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    alert('Регистрация успешна! Теперь войдите.');
+                    window.location.href = '/login.html';
+                } else {
+                    const err = await res.json();
+                    document.getElementById('error').textContent = err.error;
+                }
+            } catch (err) {
+                document.getElementById('error').textContent = 'Ошибка соединения';
+            }
+        };
+    </script>
+</body>
+</html>
