@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Добавить/Редактировать товар - Спойлеры Авто</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="card" style="max-width: 600px; margin: 0 auto;">
+            <h2 id="formTitle">Добавить товар</h2>
+            <form id="productForm">
+                <div class="form-group">
+                    <label>Название:</label>
+                    <input type="text" id="title" required>
+                </div>
+                <div class="form-group">
+                    <label>Категория:</label>
+                    <select id="category" required>
+                        <option value="">Выберите категорию</option>
+                        <option value="Спойлеры">Спойлеры</option>
+                        <option value="Обвесы">Обвесы</option>
+                        <option value="Диффузоры">Диффузоры</option>
+                        <option value="Антикрылья">Антикрылья</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Описание:</label>
+                    <textarea id="description" rows="4" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Цена (₽):</label>
+                    <input type="number" id="price" required>
+                </div>
+                <button type="submit" id="submitBtn">Сохранить</button>
+                <div id="error" class="message error" style="display: none;"></div>
+            </form>
+            <a href="/" class="back-link">← На главную</a>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000';
+        const urlParams = new URLSearchParams(window.location.search);
+        const productId = urlParams.get('id');
+        let isEdit = !!productId;
+
+        if (isEdit) {
+            document.getElementById('formTitle').innerHTML = 'Редактировать товар';
+            loadProduct();
+        }
+
+        async function loadProduct() {
+            try {
+                const res = await fetch(`${API_URL}/api/products/${productId}`);
+                if (res.ok) {
+                    const p = await res.json();
+                    document.getElementById('title').value = p.title;
+                    document.getElementById('category').value = p.category;
+                    document.getElementById('description').value = p.description;
+                    document.getElementById('price').value = p.price;
+                } else {
+                    alert('Товар не найден');
+                    window.location.href = '/';
+                }
+            } catch (err) {
+                alert('Ошибка загрузки');
+            }
+        }
+
+        document.getElementById('productForm').onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                alert('Вы не авторизованы');
+                window.location.href = '/login.html';
+                return;
+            }
+
+            const data = {
+                title: document.getElementById('title').value,
+                category: document.getElementById('category').value,
+                description: document.getElementById('description').value,
+                price: Number(document.getElementById('price').value)
+            };
+
+            const url = isEdit ? `${API_URL}/api/products/${productId}` : `${API_URL}/api/products`;
+            const method = isEdit ? 'PUT' : 'POST';
+
+            try {
+                const res = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    alert(isEdit ? 'Товар обновлен!' : 'Товар добавлен!');
+                    window.location.href = '/';
+                } else if (res.status === 401) {
+                    alert('Сессия истекла, войдите снова');
+                    window.location.href = '/login.html';
+                } else {
+                    const err = await res.json();
+                    const errorDiv = document.getElementById('error');
+                    errorDiv.textContent = err.error;
+                    errorDiv.style.display = 'block';
+                }
+            } catch (err) {
+                const errorDiv = document.getElementById('error');
+                errorDiv.textContent = 'Ошибка соединения';
+                errorDiv.style.display = 'block';
+            }
+        };
+    </script>
+</body>
+</html>

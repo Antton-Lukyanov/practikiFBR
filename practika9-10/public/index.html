@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Спойлеры Авто - Магазин автозапчастей</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="nav">
+            <a href="/">Главная</a>
+            <a href="/add-product.html">Добавить товар</a>
+            <a href="/profile.html">Профиль</a>
+            <span id="userInfo" class="user-info"></span>
+        </div>
+
+        <h1>Спойлеры Авто</h1>
+        <p>Лучшие спойлеры и обвесы для вашего автомобиля</p>
+
+        <div id="productsContainer">
+            <div class="products-grid" id="productsGrid"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000';
+
+        function checkAuth() {
+            const token = localStorage.getItem('accessToken');
+            const userInfo = document.getElementById('userInfo');
+            
+            if (token) {
+                fetch(`${API_URL}/api/auth/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }).then(res => {
+                    if (res.ok) {
+                        return res.json();
+                    } else {
+                        throw new Error('Unauthorized');
+                    }
+                }).then(user => {
+                    userInfo.innerHTML = `👤 ${user.first_name} ${user.last_name} | <a href="/profile.html" style="color:#ff6b35">Профиль</a> | <a href="#" onclick="logout()" style="color:#ff6b35">Выйти</a>`;
+                }).catch(() => {
+                    userInfo.innerHTML = `<a href="/login.html">Войти</a> | <a href="/register.html">Регистрация</a>`;
+                });
+            } else {
+                userInfo.innerHTML = `<a href="/login.html">Войти</a> | <a href="/register.html">Регистрация</a>`;
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            window.location.reload();
+        }
+
+        async function loadProducts() {
+            try {
+                const res = await fetch(`${API_URL}/api/products`);
+                const products = await res.json();
+                const grid = document.getElementById('productsGrid');
+                
+                if (products.length === 0) {
+                    grid.innerHTML = '<p style="text-align:center">Товаров пока нет. Добавьте первый товар!</p>';
+                    return;
+                }
+                
+                grid.innerHTML = products.map(p => `
+                    <div class="product-card">
+                        <h3>${escapeHtml(p.title)}</h3>
+                        <span class="category">${escapeHtml(p.category)}</span>
+                        <p>${escapeHtml(p.description)}</p>
+                        <div class="price">${p.price} ₽</div>
+                        <div class="actions">
+                            <button onclick="viewProduct('${p.id}')">Подробнее</button>
+                            <button class="warning" onclick="editProduct('${p.id}')">Изменить</button>
+                            <button class="danger" onclick="deleteProduct('${p.id}')">Удалить</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function viewProduct(id) {
+            window.location.href = `/product.html?id=${id}`;
+        }
+
+        function editProduct(id) {
+            window.location.href = `/add-product.html?id=${id}`;
+        }
+
+        async function deleteProduct(id) {
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                alert('Вы не авторизованы');
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            if (!confirm('Удалить товар?')) return;
+            
+            try {
+                const res = await fetch(`${API_URL}/api/products/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (res.ok) {
+                    loadProducts();
+                } else if (res.status === 401) {
+                    alert('Сессия истекла, войдите снова');
+                    window.location.href = '/login.html';
+                } else {
+                    alert('Ошибка удаления');
+                }
+            } catch (err) {
+                alert('Ошибка соединения');
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        checkAuth();
+        loadProducts();
+    </script>
+</body>
+</html>

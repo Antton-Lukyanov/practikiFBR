@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профиль - Спойлеры Авто</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="card" style="max-width: 600px; margin: 0 auto;">
+            <h2>Профиль пользователя</h2>
+            <div id="userInfo"></div>
+            <hr>
+            <div class="form-group">
+                <label>Access Token:</label>
+                <textarea id="accessToken" rows="3" readonly style="font-family: monospace;"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Refresh Token:</label>
+                <textarea id="refreshToken" rows="3" readonly style="font-family: monospace;"></textarea>
+            </div>
+            <button onclick="refreshTokens()" style="background: #ff9800; margin-bottom: 10px;">Обновить токены</button>
+            <button onclick="logout()" class="danger">Выйти</button>
+            <a href="/" class="back-link" style="display: block; text-align: center; margin-top: 20px;">← На главную</a>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000';
+
+        async function loadProfile() {
+            const accessToken = localStorage.getItem('accessToken');
+            const refreshToken = localStorage.getItem('refreshToken');
+            
+            document.getElementById('accessToken').value = accessToken || 'Нет токена';
+            document.getElementById('refreshToken').value = refreshToken || 'Нет токена';
+            
+            if (!accessToken) {
+                document.getElementById('userInfo').innerHTML = '<p class="error">Вы не авторизованы</p>';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/api/auth/me`, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+
+                if (res.ok) {
+                    const user = await res.json();
+                    document.getElementById('userInfo').innerHTML = `
+                        <p><strong>ID:</strong> ${user.id}</p>
+                        <p><strong>Email:</strong> ${user.email}</p>
+                        <p><strong>Имя:</strong> ${user.first_name}</p>
+                        <p><strong>Фамилия:</strong> ${user.last_name}</p>
+                    `;
+                } else if (res.status === 401) {
+                    const refreshed = await tryRefresh();
+                    if (refreshed) {
+                        loadProfile();
+                    } else {
+                        window.location.href = '/login.html';
+                    }
+                } else {
+                    document.getElementById('userInfo').innerHTML = '<p class="error">Ошибка загрузки профиля</p>';
+                }
+            } catch (err) {
+                document.getElementById('userInfo').innerHTML = '<p class="error">Ошибка соединения</p>';
+            }
+        }
+
+        async function tryRefresh() {
+            const refreshToken = localStorage.getItem('refreshToken');
+            if (!refreshToken) return false;
+
+            try {
+                const res = await fetch(`${API_URL}/api/auth/refresh`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refreshToken })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    localStorage.setItem('accessToken', data.accessToken);
+                    localStorage.setItem('refreshToken', data.refreshToken);
+                    return true;
+                }
+            } catch (err) {}
+            return false;
+        }
+
+        async function refreshTokens() {
+            const success = await tryRefresh();
+            if (success) {
+                alert('Токены обновлены!');
+                loadProfile();
+            } else {
+                alert('Не удалось обновить токены. Войдите снова.');
+                window.location.href = '/login.html';
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            window.location.href = '/login.html';
+        }
+
+        loadProfile();
+    </script>
+</body>
+</html>

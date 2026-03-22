@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Товар - Спойлеры Авто</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="card" id="productCard">
+            <div id="productInfo">Загрузка...</div>
+            <a href="/" class="back-link">← На главную</a>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000';
+        const urlParams = new URLSearchParams(window.location.search);
+        const productId = urlParams.get('id');
+
+        async function loadProduct() {
+            if (!productId) {
+                document.getElementById('productInfo').innerHTML = '<p class="error">ID товара не указан</p>';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/api/products/${productId}`);
+                if (res.ok) {
+                    const p = await res.json();
+                    document.getElementById('productInfo').innerHTML = `
+                        <h2>${escapeHtml(p.title)}</h2>
+                        <p><strong>Категория:</strong> ${escapeHtml(p.category)}</p>
+                        <p><strong>Описание:</strong> ${escapeHtml(p.description)}</p>
+                        <p><strong>Цена:</strong> ${p.price} ₽</p>
+                        <p><strong>ID товара:</strong> ${p.id}</p>
+                        <div class="actions" style="margin-top: 20px;">
+                            <button onclick="editProduct()" class="warning">Редактировать</button>
+                            <button onclick="deleteProduct()" class="danger">Удалить</button>
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('productInfo').innerHTML = '<p class="error">Товар не найден</p>';
+                }
+            } catch (err) {
+                document.getElementById('productInfo').innerHTML = '<p class="error">Ошибка загрузки</p>';
+            }
+        }
+
+        function editProduct() {
+            window.location.href = `/add-product.html?id=${productId}`;
+        }
+
+        async function deleteProduct() {
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                alert('Вы не авторизованы');
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            if (!confirm('Удалить товар?')) return;
+            
+            try {
+                const res = await fetch(`${API_URL}/api/products/${productId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (res.ok) {
+                    alert('Товар удален');
+                    window.location.href = '/';
+                } else if (res.status === 401) {
+                    alert('Сессия истекла');
+                    window.location.href = '/login.html';
+                } else {
+                    alert('Ошибка удаления');
+                }
+            } catch (err) {
+                alert('Ошибка соединения');
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        loadProduct();
+    </script>
+</body>
+</html>
