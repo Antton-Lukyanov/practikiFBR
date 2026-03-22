@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Редактировать пользователя - BMW AutoSalon</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="card" style="max-width: 600px; margin: 0 auto;">
+            <h2>Редактировать пользователя</h2>
+            <form id="userForm">
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" id="email" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Имя:</label>
+                    <input type="text" id="first_name" required>
+                </div>
+                <div class="form-group">
+                    <label>Фамилия:</label>
+                    <input type="text" id="last_name" required>
+                </div>
+                <div class="form-group">
+                    <label>Роль:</label>
+                    <select id="role">
+                        <option value="user">Пользователь</option>
+                        <option value="seller">Продавец</option>
+                        <option value="admin">Администратор</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Статус:</label>
+                    <select id="isActive">
+                        <option value="true">Активен</option>
+                        <option value="false">Заблокирован</option>
+                    </select>
+                </div>
+                <button type="submit">Сохранить</button>
+                <div id="error" class="message error" style="display: none;"></div>
+            </form>
+            <a href="/users.html" class="back-link">Назад к списку</a>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000';
+        const urlParams = new URLSearchParams(window.location.search);
+        const userId = urlParams.get('id');
+
+        async function loadUser() {
+            const token = localStorage.getItem('accessToken');
+            if (!userId) {
+                alert('ID пользователя не указан');
+                window.location.href = '/users.html';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/api/users/${userId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const user = await res.json();
+                    document.getElementById('email').value = user.email;
+                    document.getElementById('first_name').value = user.first_name;
+                    document.getElementById('last_name').value = user.last_name;
+                    document.getElementById('role').value = user.role;
+                    document.getElementById('isActive').value = user.isActive.toString();
+                } else {
+                    alert('Пользователь не найден');
+                    window.location.href = '/users.html';
+                }
+            } catch(e) {
+                alert('Ошибка загрузки');
+            }
+        }
+
+        document.getElementById('userForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const token = localStorage.getItem('accessToken');
+            
+            const data = {
+                first_name: document.getElementById('first_name').value,
+                last_name: document.getElementById('last_name').value,
+                role: document.getElementById('role').value,
+                isActive: document.getElementById('isActive').value === 'true'
+            };
+
+            try {
+                const res = await fetch(`${API_URL}/api/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    alert('Пользователь обновлен');
+                    window.location.href = '/users.html';
+                } else {
+                    const err = await res.json();
+                    const errorDiv = document.getElementById('error');
+                    errorDiv.textContent = err.error;
+                    errorDiv.style.display = 'block';
+                }
+            } catch(e) {
+                const errorDiv = document.getElementById('error');
+                errorDiv.textContent = 'Ошибка соединения';
+                errorDiv.style.display = 'block';
+            }
+        };
+
+        loadUser();
+    </script>
+</body>
+</html>

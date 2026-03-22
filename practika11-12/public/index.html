@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMW AutoSalon - Автомобили и аксессуары</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="nav">
+            <a href="/">Главная</a>
+            <a href="/add-product.html" id="addProductLink" style="display:none;">Добавить товар</a>
+            <a href="/users.html" id="usersLink" style="display:none;">Пользователи</a>
+            <a href="/profile.html">Профиль</a>
+            <span id="userInfo" class="user-info"></span>
+        </div>
+
+        <h1>BMW AutoSalon</h1>
+        <p>Официальный дилер. Автомобили BMW, аксессуары, запчасти.</p>
+
+        <div id="productsContainer">
+            <div class="products-grid" id="productsGrid"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000';
+
+        let currentUser = null;
+
+        async function checkAuth() {
+            const token = localStorage.getItem('accessToken');
+            const userInfo = document.getElementById('userInfo');
+            const addProductLink = document.getElementById('addProductLink');
+            const usersLink = document.getElementById('usersLink');
+            
+            if (token) {
+                try {
+                    const res = await fetch(`${API_URL}/api/auth/me`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        currentUser = await res.json();
+                        userInfo.innerHTML = `${currentUser.first_name} ${currentUser.last_name} (${currentUser.role}) | <a href="#" onclick="logout()" style="color:#ff8c42">Выйти</a>`;
+                        
+                        if (currentUser.role === 'seller' || currentUser.role === 'admin') {
+                            addProductLink.style.display = 'inline-block';
+                        }
+                        if (currentUser.role === 'admin') {
+                            usersLink.style.display = 'inline-block';
+                        }
+                        return;
+                    }
+                } catch(e) {}
+            }
+            currentUser = null;
+            userInfo.innerHTML = `<a href="/login.html">Войти</a> | <a href="/register.html">Регистрация</a>`;
+        }
+
+        function logout() {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            window.location.reload();
+        }
+
+        async function loadProducts() {
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                document.getElementById('productsGrid').innerHTML = '<p style="text-align:center">Для просмотра товаров войдите в систему</p>';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/api/products`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (res.status === 401) {
+                    const refreshed = await tryRefresh();
+                    if (refreshed) {
+                        loadProducts();
+                        return;
+                    } else {
+                        window.location.href = '/login.html';
+                        return;
+                    }
+                }
+                
+                const products = await res.json();
+                const grid = document.getElementById('productsGrid');
+                
+                if (products.length === 0) {
+                    grid.innerHTML = '<p style="text-align:center">Товаров пока нет.</p>';
+                    return;
+                }
+                
+                const canEdit = currentUser && (currentUser.role === 'seller' || currentUser.role === 'admin');
+                const canDelete = currentUser && currentUser.role === 'admin';
+                
+                grid.innerHTML = products.map(p => `
+                    <div class="product-card">
+                        <h3>${escapeHtml(p.title)}</h3>
+                        <span class="category">${escapeHtml(p.category)}</span>
+                        <p>${escapeHtml(p.description)}</p>
+                        <div class="price">${p.price.toLocaleString()} ₽</div>
+                        <div class="actions">
+                            <button onclick="viewProduct('${p.id}')">Подробнее</button>
+                            ${canEdit ? `<button class="warning" onclick="editProduct('${p.id}')">Изменить</button>` : ''}
+                            ${canDelete ? `<button class="danger" onclick="deleteProduct('${p.id}')">Удалить</button>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function tryRefresh() {
+            const refreshToken = localStorage.getItem('refreshToken');
+            if (!refreshToken) return false;
+
+            try {
+                const res = await fetch(`${API_URL}/api/auth/refresh`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refreshToken })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    localStorage.setItem('accessToken', data.accessToken);
+                    localStorage.setItem('refreshToken', data.refreshToken);
+                    return true;
+                }
+            } catch (err) {}
+            return false;
+        }
+
+        function viewProduct(id) {
+            window.location.href = `/product.html?id=${id}`;
+        }
+
+        function editProduct(id) {
+            window.location.href = `/add-product.html?id=${id}`;
+        }
+
+        async function deleteProduct(id) {
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                alert('Вы не авторизованы');
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            if (!confirm('Удалить товар?')) return;
+            
+            try {
+                const res = await fetch(`${API_URL}/api/products/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (res.ok) {
+                    loadProducts();
+                } else if (res.status === 401) {
+                    const refreshed = await tryRefresh();
+                    if (refreshed) deleteProduct(id);
+                    else window.location.href = '/login.html';
+                } else if (res.status === 403) {
+                    alert('Нет прав для удаления товара');
+                } else {
+                    alert('Ошибка удаления');
+                }
+            } catch (err) {
+                alert('Ошибка соединения');
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        checkAuth().then(() => loadProducts());
+    </script>
+</body>
+</html>

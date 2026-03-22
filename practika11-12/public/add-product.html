@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Добавить/Редактировать товар - BMW AutoSalon</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="card" style="max-width: 600px; margin: 0 auto;">
+            <h2 id="formTitle">Добавить товар</h2>
+            <form id="productForm">
+                <div class="form-group">
+                    <label>Название:</label>
+                    <input type="text" id="title" required>
+                </div>
+                <div class="form-group">
+                    <label>Категория:</label>
+                    <select id="category" required>
+                        <option value="">Выберите категорию</option>
+                        <option value="Автомобили">Автомобили</option>
+                        <option value="Аксессуары">Аксессуары</option>
+                        <option value="Запчасти">Запчасти</option>
+                        <option value="Шины и диски">Шины и диски</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Описание:</label>
+                    <textarea id="description" rows="4" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Цена (₽):</label>
+                    <input type="number" id="price" required>
+                </div>
+                <button type="submit" id="submitBtn">Сохранить</button>
+                <div id="error" class="message error" style="display: none;"></div>
+            </form>
+            <a href="/" class="back-link">На главную</a>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000';
+        const urlParams = new URLSearchParams(window.location.search);
+        const productId = urlParams.get('id');
+        let isEdit = !!productId;
+
+        if (isEdit) {
+            document.getElementById('formTitle').innerHTML = 'Редактировать товар';
+            loadProduct();
+        }
+
+        async function loadProduct() {
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                alert('Вы не авторизованы');
+                window.location.href = '/login.html';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/api/products/${productId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const p = await res.json();
+                    document.getElementById('title').value = p.title;
+                    document.getElementById('category').value = p.category;
+                    document.getElementById('description').value = p.description;
+                    document.getElementById('price').value = p.price;
+                } else {
+                    alert('Товар не найден');
+                    window.location.href = '/';
+                }
+            } catch (err) {
+                alert('Ошибка загрузки');
+            }
+        }
+
+        async function tryRefresh() {
+            const refreshToken = localStorage.getItem('refreshToken');
+            if (!refreshToken) return false;
+
+            try {
+                const res = await fetch(`${API_URL}/api/auth/refresh`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refreshToken })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    localStorage.setItem('accessToken', data.accessToken);
+                    localStorage.setItem('refreshToken', data.refreshToken);
+                    return true;
+                }
+            } catch (err) {}
+            return false;
+        }
+
+        document.getElementById('productForm').onsubmit = async (e) => {
+            e.preventDefault();
+            
+            let token = localStorage.getItem('accessToken');
+            if (!token) {
+                alert('Вы не авторизованы');
+                window.location.href = '/login.html';
+                return;
+            }
+
+            const data = {
+                title: document.getElementById('title').value,
+                category: document.getElementById('category').value,
+                description: document.getElementById('description').value,
+                price: Number(document.getElementById('price').value)
+            };
+
+            const url = isEdit ? `${API_URL}/api/products/${productId}` : `${API_URL}/api/products`;
+            const method = isEdit ? 'PUT' : 'POST';
+
+            try {
+                let res = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.status === 401) {
+                    const refreshed = await tryRefresh();
+                    if (refreshed) {
+                        token = localStorage.getItem('accessToken');
+                        res = await fetch(url, {
+                            method: method,
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify(data)
+                        });
+                    } else {
+                        window.location.href = '/login.html';
+                        return;
+                    }
+                }
+
+                if (res.ok) {
+                    alert(isEdit ? 'Товар обновлен!' : 'Товар добавлен!');
+                    window.location.href = '/';
+                } else if (res.status === 403) {
+                    alert('Нет прав для этого действия');
+                } else {
+                    const err = await res.json();
+                    const errorDiv = document.getElementById('error');
+                    errorDiv.textContent = err.error;
+                    errorDiv.style.display = 'block';
+                }
+            } catch (err) {
+                const errorDiv = document.getElementById('error');
+                errorDiv.textContent = 'Ошибка соединения';
+                errorDiv.style.display = 'block';
+            }
+        };
+    </script>
+</body>
+</html>

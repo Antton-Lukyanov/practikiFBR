@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление пользователями - BMW AutoSalon</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="nav">
+            <a href="/">Главная</a>
+            <a href="/add-product.html">Добавить товар</a>
+            <a href="/users.html">Пользователи</a>
+            <a href="/profile.html">Профиль</a>
+            <span id="userInfo" class="user-info"></span>
+        </div>
+
+        <h2>Управление пользователями</h2>
+        
+        <div style="margin-bottom: 20px;">
+            <button onclick="showCreateSellerForm()" class="warning">Создать продавца</button>
+        </div>
+        
+        <div id="createSellerForm" style="display: none; background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+            <h3>Создать продавца</h3>
+            <div class="form-group">
+                <label>Email:</label>
+                <input type="email" id="sellerEmail">
+            </div>
+            <div class="form-group">
+                <label>Имя:</label>
+                <input type="text" id="sellerFirstName">
+            </div>
+            <div class="form-group">
+                <label>Фамилия:</label>
+                <input type="text" id="sellerLastName">
+            </div>
+            <div class="form-group">
+                <label>Пароль:</label>
+                <input type="password" id="sellerPassword">
+            </div>
+            <button onclick="createSeller()">Создать</button>
+            <button onclick="hideCreateSellerForm()" class="secondary">Отмена</button>
+        </div>
+
+        <div id="usersContainer">
+            <table class="users-table" id="usersTable">
+                <thead>
+                    <tr><th>ID</th><th>Email</th><th>Имя</th><th>Фамилия</th><th>Роль</th><th>Статус</th><th>Действия</th></tr>
+                </thead>
+                <tbody id="usersList"></tbody>
+            </table>
+        </div>
+        <a href="/" class="back-link">На главную</a>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000';
+
+        async function checkAuth() {
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                window.location.href = '/login.html';
+                return false;
+            }
+            
+            try {
+                const res = await fetch(`${API_URL}/api/auth/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const user = await res.json();
+                    if (user.role !== 'admin') {
+                        alert('Доступ запрещен. Только для администраторов.');
+                        window.location.href = '/';
+                        return false;
+                    }
+                    document.getElementById('userInfo').innerHTML = `${user.first_name} ${user.last_name} (${user.role}) | <a href="#" onclick="logout()" style="color:#ff8c42">Выйти</a>`;
+                    return true;
+                } else {
+                    window.location.href = '/login.html';
+                    return false;
+                }
+            } catch(e) {
+                window.location.href = '/login.html';
+                return false;
+            }
+        }
+
+        async function loadUsers() {
+            const token = localStorage.getItem('accessToken');
+            try {
+                const res = await fetch(`${API_URL}/api/users`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const users = await res.json();
+                    const tbody = document.getElementById('usersList');
+                    tbody.innerHTML = users.map(u => `
+                        <tr>
+                            <td>${u.id}</td>
+                            <td>${escapeHtml(u.email)}</td>
+                            <td>${escapeHtml(u.first_name)}</td>
+                            <td>${escapeHtml(u.last_name)}</td>
+                            <td><span class="badge ${u.role}">${u.role === 'admin' ? 'Админ' : (u.role === 'seller' ? 'Продавец' : 'Пользователь')}</span></td>
+                            <td>${u.isActive ? '<span class="badge active">Активен</span>' : '<span class="badge blocked">Заблокирован</span>'}</td>
+                            <td>
+                                <button onclick="editUser('${u.id}')" class="warning" style="padding:5px 10px; font-size:12px;">Редактировать</button>
+                                <button onclick="deleteUser('${u.id}')" class="danger" style="padding:5px 10px; font-size:12px;">Удалить</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        function showCreateSellerForm() {
+            document.getElementById('createSellerForm').style.display = 'block';
+        }
+
+        function hideCreateSellerForm() {
+            document.getElementById('createSellerForm').style.display = 'none';
+            document.getElementById('sellerEmail').value = '';
+            document.getElementById('sellerFirstName').value = '';
+            document.getElementById('sellerLastName').value = '';
+            document.getElementById('sellerPassword').value = '';
+        }
+
+        async function createSeller() {
+            const token = localStorage.getItem('accessToken');
+            const data = {
+                email: document.getElementById('sellerEmail').value,
+                first_name: document.getElementById('sellerFirstName').value,
+                last_name: document.getElementById('sellerLastName').value,
+                password: document.getElementById('sellerPassword').value
+            };
+
+            if (!data.email || !data.first_name || !data.last_name || !data.password) {
+                alert('Заполните все поля');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/api/users/seller`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    alert('Продавец создан');
+                    hideCreateSellerForm();
+                    loadUsers();
+                } else {
+                    const err = await res.json();
+                    alert(err.error);
+                }
+            } catch(e) {
+                alert('Ошибка соединения');
+            }
+        }
+
+        function editUser(id) {
+            window.location.href = `/edit-user.html?id=${id}`;
+        }
+
+        async function deleteUser(id) {
+            if (!confirm('Удалить пользователя?')) return;
+            const token = localStorage.getItem('accessToken');
+            try {
+                const res = await fetch(`${API_URL}/api/users/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    alert('Пользователь удален');
+                    loadUsers();
+                } else {
+                    alert('Ошибка удаления');
+                }
+            } catch(e) {
+                alert('Ошибка соединения');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            window.location.href = '/login.html';
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        checkAuth().then(() => loadUsers());
+    </script>
+</body>
+</html>

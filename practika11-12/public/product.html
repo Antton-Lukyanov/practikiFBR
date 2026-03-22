@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Товар - BMW AutoSalon</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="card" id="productCard">
+            <div id="productInfo">Загрузка...</div>
+            <a href="/" class="back-link">На главную</a>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000';
+        const urlParams = new URLSearchParams(window.location.search);
+        const productId = urlParams.get('id');
+
+        async function loadProduct() {
+            const token = localStorage.getItem('accessToken');
+            if (!productId) {
+                document.getElementById('productInfo').innerHTML = '<p class="error">ID товара не указан</p>';
+                return;
+            }
+
+            if (!token) {
+                document.getElementById('productInfo').innerHTML = '<p class="error">Для просмотра товаров войдите в систему</p>';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/api/products/${productId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (res.status === 401) {
+                    const refreshed = await tryRefresh();
+                    if (refreshed) {
+                        loadProduct();
+                        return;
+                    } else {
+                        window.location.href = '/login.html';
+                        return;
+                    }
+                }
+                
+                if (res.ok) {
+                    const p = await res.json();
+                    const currentUser = await getCurrentUser();
+                    const canEdit = currentUser && (currentUser.role === 'seller' || currentUser.role === 'admin');
+                    const canDelete = currentUser && currentUser.role === 'admin';
+                    
+                    document.getElementById('productInfo').innerHTML = `
+                        <h2>${escapeHtml(p.title)}</h2>
+                        <p><strong>Категория:</strong> ${escapeHtml(p.category)}</p>
+                        <p><strong>Описание:</strong> ${escapeHtml(p.description)}</p>
+                        <p><strong>Цена:</strong> ${p.price.toLocaleString()} ₽</p>
+                        <p><strong>ID товара:</strong> ${p.id}</p>
+                        <div class="actions" style="margin-top: 20px;">
+                            ${canEdit ? `<button onclick="editProduct()" class="warning">Редактировать</button>` : ''}
+                            ${canDelete ? `<button onclick="deleteProduct()" class="danger">Удалить</button>` : ''}
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('productInfo').innerHTML = '<p class="error">Товар не найден</p>';
+                }
+            } catch (err) {
+                document.getElementById('productInfo').innerHTML = '<p class="error">Ошибка загрузки</p>';
+            }
+        }
+
+        async function getCurrentUser() {
+            const token = localStorage.getItem('accessToken');
+            if (!token) return null;
+            try {
+                const res = await fetch(`${API_URL}/api/auth/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) return await res.json();
+            } catch(e) {}
+            return null;
+        }
+
+        async function tryRefresh() {
+            const refreshToken = localStorage.getItem('refreshToken');
+            if (!refreshToken) return false;
+
+            try {
+                const res = await fetch(`${API_URL}/api/auth/refresh`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refreshToken })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    localStorage.setItem('accessToken', data.accessToken);
+                    localStorage.setItem('refreshToken', data.refreshToken);
+                    return true;
+                }
+            } catch (err) {}
+            return false;
+        }
+
+        function editProduct() {
+            window.location.href = `/add-product.html?id=${productId}`;
+        }
+
+        async function deleteProduct() {
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                alert('Вы не авторизованы');
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            if (!confirm('Удалить товар?')) return;
+            
+            try {
+                const res = await fetch(`${API_URL}/api/products/${productId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (res.ok) {
+                    alert('Товар удален');
+                    window.location.href = '/';
+                } else if (res.status === 401) {
+                    const refreshed = await tryRefresh();
+                    if (refreshed) deleteProduct();
+                    else window.location.href = '/login.html';
+                } else if (res.status === 403) {
+                    alert('Нет прав для удаления товара');
+                } else {
+                    alert('Ошибка удаления');
+                }
+            } catch (err) {
+                alert('Ошибка соединения');
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        loadProduct();
+    </script>
+</body>
+</html>
