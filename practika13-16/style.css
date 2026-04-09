@@ -220,3 +220,64 @@ footer {
     color: #7a9a7a;
     font-size: 0.8rem;
 }
+
+.nav-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 15px;
+}
+
+.nav-btn {
+    padding: 8px 20px;
+    background: #1a3a28;
+    border: 1px solid #2d8c5a;
+    border-radius: 50px;
+    color: #e0e0e0;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+}
+
+.nav-btn:hover {
+    background: #2d8c5a;
+}
+
+.nav-btn.active {
+    background: #2d8c5a;
+    border-color: #5cda9a;
+}
+
+.push-controls {
+    text-align: center;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #2d6a4a;
+}
+
+.push-btn {
+    padding: 10px 24px;
+    border: none;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.push-btn.enable {
+    background: #2d8c5a;
+    color: white;
+}
+
+.push-btn.enable:hover {
+    background: #3dad6a;
+}
+
+.push-btn.disable {
+    background: #5a3a3a;
+    color: #ffc0c0;
+}
+
+.loading {
+    text-align: center;
+    padding: 40px;
+}
