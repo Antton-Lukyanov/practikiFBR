@@ -1,0 +1,58 @@
+<div class="home-content">
+    <div class="status-card">
+        <div class="status-item">
+            <span class="status-label">Status:</span>
+            <span id="onlineStatus" class="status-value online">Online</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">Service Worker:</span>
+            <span id="swStatus" class="status-value active">Active</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">WebSocket:</span>
+            <span id="wsStatus" class="status-value online">Connected</span>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <h3>Add simple note</h3>
+        <form id="note-form" class="form-row">
+            <input type="text" id="note-input" placeholder="Enter note..." required autocomplete="off">
+            <button type="submit" id="add-btn">Add</button>
+        </form>
+    </div>
+
+    <div class="form-card">
+        <h3>Add note with reminder</h3>
+        <form id="reminder-form" class="form-reminder">
+            <input type="text" id="reminder-text" placeholder="Reminder text..." required autocomplete="off">
+            <input type="datetime-local" id="reminder-time" required>
+            <button type="submit" id="reminder-btn">Add reminder</button>
+        </form>
+    </div>
+
+    <div class="notes-header">
+        <h2>Notes list</h2>
+        <button id="clear-all-btn" class="clear-btn">Clear all</button>
+    </div>
+
+    <ul id="notes-list" class="notes-list">
+        <li class="empty-message">No notes. Add first!</li>
+    </ul>
+</div>
+
+<script>
+    if (typeof socket !== 'undefined') {
+        var wsSpan = document.getElementById('wsStatus');
+        if (wsSpan) {
+            socket.on('connect', function() {
+                wsSpan.textContent = 'Connected';
+                wsSpan.className = 'status-value online';
+            });
+            socket.on('disconnect', function() {
+                wsSpan.textContent = 'Disconnected';
+                wsSpan.className = 'status-value offline';
+            });
+        }
+    }
+</script>

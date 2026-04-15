@@ -1,0 +1,384 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: linear-gradient(135deg, #0a2e1f 0%, #145c33 100%);
+    color: #e0e0e0;
+    min-height: 100vh;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #2d8c5a;
+}
+
+h1 {
+    font-size: 2rem;
+    color: #d4ffb0;
+    margin-bottom: 8px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+.subtitle {
+    color: #a0e0b0;
+    font-size: 0.85rem;
+}
+
+.status-card {
+    background: rgba(20, 60, 40, 0.9);
+    backdrop-filter: blur(5px);
+    border: 1px solid #2d8c5a;
+    border-radius: 20px;
+    padding: 12px 20px;
+    margin-bottom: 25px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.status-item {
+    font-size: 0.9rem;
+}
+
+.status-label {
+    font-weight: 600;
+    color: #b0e0b0;
+}
+
+.status-value {
+    margin-left: 8px;
+    padding: 3px 10px;
+    border-radius: 30px;
+    background: #1a3a28;
+    color: #c0ffc0;
+}
+
+.status-value.online {
+    background: #2d8c5a;
+    color: white;
+}
+
+.status-value.offline {
+    background: #8b3a3a;
+    color: #ffc0c0;
+}
+
+.status-value.active {
+    background: #2d8c5a;
+    color: white;
+}
+
+.status-value.inactive {
+    background: #8b6a2a;
+    color: #ffe0a0;
+}
+
+/* Простая форма */
+.form-row {
+    display: flex;
+    gap: 12px;
+}
+
+#note-input {
+    flex: 1;
+    padding: 14px 20px;
+    border: 2px solid #2d8c5a;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-family: inherit;
+    background: #1a3a28;
+    color: #e0e0e0;
+    transition: all 0.2s;
+}
+
+#note-input:focus {
+    outline: none;
+    border-color: #5cda9a;
+    box-shadow: 0 0 8px rgba(45, 140, 90, 0.5);
+}
+
+#note-input::placeholder {
+    color: #6a9a7a;
+}
+
+#add-btn {
+    padding: 14px 30px;
+    background: #2d8c5a;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+#add-btn:hover {
+    background: #3dad6a;
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Карточки форм */
+.form-card {
+    background: rgba(20, 60, 40, 0.6);
+    border-radius: 20px;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    border: 1px solid #2d8c5a;
+}
+
+.form-card h3 {
+    margin: 0 0 12px 0;
+    font-size: 1rem;
+    color: #d4ffb0;
+}
+
+/* Форма с напоминанием */
+.form-reminder {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.form-reminder input[type="text"] {
+    flex: 2;
+    padding: 12px 16px;
+    border: 2px solid #2d8c5a;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    background: #1a3a28;
+    color: #e0e0e0;
+}
+
+.form-reminder input[type="datetime-local"] {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid #2d8c5a;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    background: #1a3a28;
+    color: #e0e0e0;
+    cursor: pointer;
+}
+
+.form-reminder input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.8);
+    cursor: pointer;
+}
+
+.form-reminder button {
+    padding: 12px 24px;
+    background: #2d8c5a;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.form-reminder button:hover {
+    background: #3dad6a;
+}
+
+/* Заголовок списка заметок */
+.notes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 30px 0 15px 0;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #2d8c5a;
+}
+
+.notes-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #d4ffb0;
+}
+
+.clear-btn {
+    padding: 8px 18px;
+    background: #2a3a2a;
+    color: #c0e0c0;
+    border: 1px solid #4a8a5a;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.clear-btn:hover {
+    background: #3a5a3a;
+    color: white;
+    border-color: #5cda9a;
+}
+
+/* Список заметок */
+.notes-list {
+    list-style: none;
+    background: rgba(20, 60, 40, 0.8);
+    backdrop-filter: blur(3px);
+    border-radius: 20px;
+    border: 1px solid #2d8c5a;
+    overflow: hidden;
+}
+
+.notes-list li {
+    padding: 12px 15px;
+    border-bottom: 1px solid #2d6a4a;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.notes-list li:last-child {
+    border-bottom: none;
+}
+
+.notes-list .empty-message {
+    text-align: center;
+    color: #8aba9a;
+    padding: 30px;
+    display: block;
+}
+
+.note-content {
+    flex: 1;
+}
+
+.note-text {
+    font-size: 1rem;
+    word-break: break-word;
+    color: #e0f0e0;
+}
+
+.note-reminder {
+    font-size: 0.7rem;
+    color: #ffaa66;
+    display: block;
+    margin-top: 4px;
+}
+
+.delete-note {
+    background: none;
+    border: none;
+    color: #8aba9a;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 5px 12px;
+    border-radius: 50px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.delete-note:hover {
+    color: #ff8a6a;
+    background: rgba(255, 100, 80, 0.2);
+}
+
+/* Навигация */
+.nav-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 15px;
+}
+
+.nav-btn {
+    padding: 8px 20px;
+    background: #1a3a28;
+    border: 1px solid #2d8c5a;
+    border-radius: 50px;
+    color: #e0e0e0;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+}
+
+.nav-btn:hover {
+    background: #2d8c5a;
+}
+
+.nav-btn.active {
+    background: #2d8c5a;
+    border-color: #5cda9a;
+}
+
+/* Кнопки push-уведомлений */
+.push-controls {
+    text-align: center;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #2d6a4a;
+}
+
+.push-btn {
+    padding: 10px 24px;
+    border: none;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.push-btn.enable {
+    background: #2d8c5a;
+    color: white;
+}
+
+.push-btn.enable:hover {
+    background: #3dad6a;
+}
+
+.push-btn.disable {
+    background: #5a3a3a;
+    color: #ffc0c0;
+}
+
+.loading {
+    text-align: center;
+    padding: 40px;
+}
+
+footer {
+    text-align: center;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #2d6a4a;
+    color: #7a9a7a;
+    font-size: 0.8rem;
+}
+
+/* Адаптация для мобильных */
+@media (max-width: 700px) {
+    .form-reminder {
+        flex-direction: column;
+    }
+    
+    .form-reminder input,
+    .form-reminder button {
+        width: 100%;
+    }
+    
+    .notes-list li {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .delete-note {
+        align-self: flex-end;
+        margin-top: 8px;
+    }
+}

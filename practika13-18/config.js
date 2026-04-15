@@ -1,0 +1,1 @@
+window.VAPID_PUBLIC_KEY = 'BIDB01PnYdYZUSxFyGaxpgzDtfRiXSbjaVb26H_28GghK2Y2P7R1LM9YhTpgacfE35siFkgqgMgprHf9G8geXpY';
